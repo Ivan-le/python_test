@@ -119,6 +119,7 @@ class XdclassTestCase():
         :param api_host_obj:
         :return:
         """
+        print("test")
         pass
 
 
@@ -133,7 +134,7 @@ class XdclassTestCase():
         :param response:
         :return:
         """
-
+        pass
 
 
 
