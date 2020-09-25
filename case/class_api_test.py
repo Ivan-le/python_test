@@ -134,7 +134,33 @@ class XdclassTestCase():
         :param response:
         :return:
         """
-        pass
+        assert_type = case['assert_type']
+        expect_result = case['expect_result']
+        is_pass = False
+
+        # 判断业务状态码
+        if  assert_type == 'code':
+            if expect_result == response['code']:
+                is_pass = True
+                print('测试用例通过')
+            else:
+                print('测试不通过')
+
+        # 判断数组长度大小
+        elif assert_type == "page":
+            if int(expect_result) == len(response[assert_type]['list']):
+                is_pass = True
+                print('测试用例通过')
+            else:
+                print('测试不通过')
+        # else:
+            # if expect_result == response[assert_type]:
+
+
+        else:
+            pass
+
+
 
 
 
