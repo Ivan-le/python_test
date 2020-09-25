@@ -146,19 +146,25 @@ class XdclassTestCase():
             else:
                 print('测试不通过')
 
-        # 判断数组长度大小
+        # 判断list的长度大小和类型
         elif assert_type == "page":
-            if int(expect_result) == len(response[assert_type]['list']):
+            response_list = response[assert_type]['list']
+            if int(expect_result) == len(response_list) and  isinstance(response_list,list):
                 is_pass = True
                 print('测试用例通过')
             else:
                 print('测试不通过')
+        elif assert_type == 'data':
+             data = response["data"]
+             data_num = case['data_num']
+            
+
+
+
+
+
         # else:
-            # if expect_result == response[assert_type]:
 
-
-        else:
-            pass
 
 
 
