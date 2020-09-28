@@ -1,7 +1,8 @@
 import datetime
 
 from until.db_until import MysqlDb
-
+from until.Request_Until import RequsesUntil
+import json
 
 class XdclassTestCase():
 
@@ -49,9 +50,10 @@ class XdclassTestCase():
         :return:
         """
         my_db = MysqlDb()
-        sql = "select * from `config` where app='{0} AND key={0}'".format(app, key)
+        sql = "select * from `config` where app=\'{0}\' AND dict_key=\'{1}\'".format(app, key)
+        print(sql)
 
-        result = my_db.query(sql,state="one")
+        result = my_db.query(sql, state="one")
         return result
 
 
@@ -68,14 +70,14 @@ class XdclassTestCase():
         my_db = MysqlDb()
         now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if is_pass:
-            sql = "update `case` set response='{0}', pass='{1}',msg='{2},update_time='{3}' where id='{4}'".format("",is_pass,msg,now_time,case_id)
+            sql = "update `case` set response='{0}', pass='{1}',msg='{2}',update_time='{3}' where id={4}".format("", is_pass,msg, now_time, case_id)
         else:
-            sql = "update `case` set response=\"{0}\", pass='{1}',msg='{2},update_time='{3}' where id='{4}'".format(str(response),is_pass,msg,now_time,case_id)
+            sql = "update `case` set response=\"{0}\", pass='{1}',msg='{2}',update_time='{3}' where id={4}".format(str(response), is_pass, msg, now_time, case_id)
 
         rows = my_db.execute(sql)
         print(sql)
 
-        return  rows
+        return rows
 
 
 
@@ -87,7 +89,7 @@ class XdclassTestCase():
         """
 
         #获取接口域名
-        api_host_obj = self.loadConfigByAppAndKey(app,"host")
+        api_host_obj = self.loadConfigByAppAndKey(app, "host")
 
         #获取全部用例
         result = self.loadAllCaseByAPP(app)
@@ -98,31 +100,69 @@ class XdclassTestCase():
             if case['run'] == "yes":
                 try:
                     #执行用例
-                    response = self.runCase(case,api_host_obj)
+                    response = self.runCase(case, api_host_obj)
 
                     # 断言判断
                     assert_msg = self.assertResponse(case,response)
 
                     #更新数据库
-                    rows = self.updateResultByCaseId(response,assert_msg['is_pass'],assert_msg['msg'],case['id'])
+                    rows = self.updateResultByCaseId(response, assert_msg['is_pass'], assert_msg['msg'],case['id'])
                     print("更新结果 rows={0}".format(str(rows)))
                 except Exception as e:
-                    print("用例id={0}，标题：{1}，执行报错：{2}".format(case['id'], case['tltle'], e))
+                    print("用例id={0},标题：{1},执行报错：{2}".format(case['id'], case['tltle'], e))
 
             # 发送测试报告
             self.sendTestReport(app)
 
-    def runCase(self,case,api_host_obj):
+    def runCase(self, case, api_host_obj):
         """
         执行单个测试用例
         :param case:
         :param api_host_obj:
         :return:
         """
-        print("test")
-        pass
+        headers = json.loads(case['headers'])
+        req_url = api_host_obj["dict_value"]+case['url']
+        body = json.loads(case['request_body'])
+        method = case['method']
+        req = RequsesUntil()
 
 
+        if case['prc_case_id'] > -1:
+            print("有预置条件")
+            pre_case_id = case['prc_case_id']
+            pre_case = self.findCaseById(pre_case_id)
+            # 递归调用
+            pre_response = self.runCase(pre_case, api_host_obj)
+            # 前置条件断言
+            pre_assert_msg  = self.assertResponse(pre_case,pre_response)
+            if not pre_assert_msg['is_pass']:
+                # 前置条件不通过,替换
+                pre_response['msg'] = "前置条件不通过，"+pre_response['msg']
+                return pre_response
+
+            # 判断case的前置条件是哪个字段
+            pre_fields = json.loads(case['prc_fields'])
+            for pre_field in pre_fields:
+                print(pre_field )
+                if pre_field['scope'] == 'headers':
+                    for header in headers:
+                        field_name = pre_field['field']
+                        field_value = pre_response['data'][field_name]
+                        # 覆盖替换
+                        headers[field_name] = field_value
+                elif pre_field['scope'] == 'body':
+                    print('替换body')
+                    for bodys in body:
+                        field_name = bodys['field']
+                        field_value = pre_response['data'][field_name]
+                        bodys[field_name] = field_value
+
+
+
+        response = req.request(method, req_url, headers=headers, param=body)
+
+        return response
 
 
 
@@ -139,8 +179,8 @@ class XdclassTestCase():
         is_pass = False
 
         # 判断业务状态码
-        if  assert_type == 'code':
-            if expect_result == response['code']:
+        if assert_type == 'code':
+            if int(expect_result) == response['code']:
                 is_pass = True
                 print('测试用例通过')
             else:
@@ -154,16 +194,17 @@ class XdclassTestCase():
                 print('测试用例通过')
             else:
                 print('测试不通过')
-        elif assert_type == 'data':
-             data = response["data"]
-             data_num = case['data_num']
-            
+        # elif assert_type == 'data':
+        #      data = response["data"]
+        #      data_num = case['data_num']
+
+        msg = "模块:{0},标题：{1}，断言类型：{2}，响应：{3}".format(case['module'], case['title'], case['assert_type'], response['msg'])
 
 
+        # 拼接返回结果
+        assert_msg = {'is_pass': is_pass, 'msg': msg}
 
-
-
-        # else:
+        return assert_msg
 
 
 
@@ -185,6 +226,12 @@ class XdclassTestCase():
 
 
 if __name__ == '__main__':
+    start_time = datetime.datetime.now()
     sql = XdclassTestCase()
-    num = sql.findCaseById(1)
+    num = sql.runAllCase("测试")
     print(num)
+    over_time = datetime.datetime.now()
+    time = over_time - start_time
+    print(time)
+    # num = sql.loadConfigByAppAndKey('测试1','host')
+    # print(num)

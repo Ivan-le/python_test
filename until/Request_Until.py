@@ -1,15 +1,17 @@
-import  requests
+
 
 """
 请求工具封装
 """
+import requests
+
 
 class RequsesUntil:
 
     def __init__(self):
         pass
 
-    def request(self, method,url, headers=None, param=None, content_type=None):
+    def request(self, method, url, headers=None, param=None, content_type=None):
         """
         封装
         :return:
@@ -23,7 +25,7 @@ class RequsesUntil:
                     result = requests.post(url=url, headers=headers, json=param).json()
                     return result
                 else:
-                    result = requests.post(url=url, headers=headers, data=param).json()
+                    result = requests.post(url=url, headers=headers, json=param).json()
                     return result
             else:
                 print("no such method！")

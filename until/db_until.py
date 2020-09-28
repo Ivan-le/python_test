@@ -10,7 +10,7 @@ class MysqlDb():
 
     def __init__(self):
 
-        self.conn = pymysql.connect("10.172.0.181", "root", "123456", 'Test_case')
+        self.conn = pymysql.connect("10.172.0.172", "root", "m654321", 'Test_case')
 
         self.cur = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
 
@@ -44,15 +44,16 @@ class MysqlDb():
         try:
             # 使用execute操作sql
             rows = self.cur.execute(sql)
+            print(rows)
             # 提交事务
             self.conn.commit()
         except Exception as e:
             print("数据库操作异常{0}".format(e))
             # 事务回滚
             self.conn.rollback()
-
+        return rows
 
 if __name__ == '__main__':
     mydb = MysqlDb()
-    r = mydb.query("select * from `case`")
+    r = mydb.query("select * from `config` where app='测试1' AND dict_key='host'")
     print(r)
