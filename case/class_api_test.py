@@ -201,7 +201,7 @@ class XdclassTestCase():
         msg = "模块:{0},标题：{1}，断言类型：{2}，响应：{3}".format(case['module'], case['title'], case['assert_type'], response['msg'])
 
 
-        # 拼接返回结果
+        #   拼接返回结果
         assert_msg = {'is_pass': is_pass, 'msg': msg}
 
         return assert_msg
