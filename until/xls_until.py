@@ -27,4 +27,3 @@ class read_cls():
 if __name__ == '__main__':
     table = read_cls()
     list = table.read('test.xlsx','测试1-1')
-    
