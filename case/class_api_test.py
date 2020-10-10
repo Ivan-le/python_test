@@ -210,9 +210,6 @@ class XdclassTestCase():
 
 
 
-
-
-
     def sendTestReport(self,app):
         """
         发送测试报告
